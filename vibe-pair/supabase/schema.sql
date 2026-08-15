@@ -1,0 +1,20 @@
+create extension if not exists "uuid-ossp";
+create table if not exists public.profiles(id uuid primary key references auth.users(id) on delete cascade,display_name text,age int check(age is null or age>=18),bio text,avatar_url text,created_at timestamptz default now(),updated_at timestamptz default now());
+create table if not exists public.likes(id uuid primary key default uuid_generate_v4(),user_id uuid not null references auth.users(id) on delete cascade,liked_user_id uuid not null references auth.users(id) on delete cascade,created_at timestamptz default now(),unique(user_id,liked_user_id),check(user_id<>liked_user_id));
+create table if not exists public.matches(id uuid primary key default uuid_generate_v4(),user1_id uuid not null references auth.users(id) on delete cascade,user2_id uuid not null references auth.users(id) on delete cascade,created_at timestamptz default now(),unique(user1_id,user2_id),check(user1_id<>user2_id));
+create table if not exists public.messages(id uuid primary key default uuid_generate_v4(),sender_id uuid not null references auth.users(id) on delete cascade,body text not null check(length(body) between 1 and 5000),created_at timestamptz default now());
+create table if not exists public.blocks(id uuid primary key default uuid_generate_v4(),blocker_id uuid not null references auth.users(id) on delete cascade,blocked_id uuid not null references auth.users(id) on delete cascade,created_at timestamptz default now(),unique(blocker_id,blocked_id),check(blocker_id<>blocked_id));
+create table if not exists public.reports(id uuid primary key default uuid_generate_v4(),reporter_id uuid not null references auth.users(id) on delete cascade,reported_id uuid not null references auth.users(id) on delete cascade,reason text not null,created_at timestamptz default now());
+alter table public.profiles enable row level security;alter table public.likes enable row level security;alter table public.matches enable row level security;alter table public.messages enable row level security;alter table public.blocks enable row level security;alter table public.reports enable row level security;
+create policy "profiles read authenticated" on public.profiles for select to authenticated using(true);
+create policy "profile insert own" on public.profiles for insert to authenticated with check(auth.uid()=id);
+create policy "profile update own" on public.profiles for update to authenticated using(auth.uid()=id);
+create policy "like insert own" on public.likes for insert to authenticated with check(auth.uid()=user_id);
+create policy "like read involved" on public.likes for select to authenticated using(auth.uid()=user_id or auth.uid()=liked_user_id);
+create policy "match insert involved" on public.matches for insert to authenticated with check(auth.uid()=user1_id or auth.uid()=user2_id);
+create policy "match read involved" on public.matches for select to authenticated using(auth.uid()=user1_id or auth.uid()=user2_id);
+create policy "message insert own" on public.messages for insert to authenticated with check(auth.uid()=sender_id);
+create policy "message read authenticated" on public.messages for select to authenticated using(true);
+create policy "block insert own" on public.blocks for insert to authenticated with check(auth.uid()=blocker_id);
+create policy "report insert own" on public.reports for insert to authenticated with check(auth.uid()=reporter_id);
+-- Enable Realtime for public.messages in Supabase Dashboard > Database > Publications if needed.

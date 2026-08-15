@@ -1,0 +1,1 @@
+export default function Logo(){return <div className="text-3xl font-black"><span className="text-vibe-pink">Vibe</span> Pair</div>}

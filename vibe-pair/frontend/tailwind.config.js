@@ -1,0 +1,1 @@
+export default {content:["./index.html","./src/**/*.{js,jsx}"],theme:{extend:{colors:{vibe:{pink:"#ff4f9a",purple:"#8b5cf6"}}}},plugins:[]};
